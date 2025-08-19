@@ -1,8 +1,16 @@
-# Use the official Openkoda runtime image
-FROM openkoda/openkoda:latest
+# ---- build ----
+FROM maven:3.9-eclipse-temurin-17 AS build
+WORKDIR /src
+COPY . .
+# Speed up repeat builds
+RUN mvn -q -DskipTests package
 
-# Choreo requires a numeric USER between 10000–20000
+# ---- run ----
+FROM eclipse-temurin:17-jre
+# Choreo requires a numeric user
+RUN useradd -u 10001 -r appuser
 USER 10001
-
-# Openkoda listens on 8080
+WORKDIR /app
+COPY --from=build /src/target/*.jar /app/application.jar
 EXPOSE 8080
+ENTRYPOINT ["java","-jar","/app/application.jar"]
